@@ -14,15 +14,15 @@ logger = logging.getLogger(__name__)
 # SUUMO の実ページに合わせた代表的なセレクタ。
 LISTING_SELECTOR = "div.cassetteitem"
 ROOM_ROW_SELECTOR = "table.cassetteitem_other tbody tr"
-TITLE_SELECTOR = ".cassetteitem_content-title a"
+TITLE_SELECTOR = ".cassetteitem_content-title a, .cassetteitem_content-title"
 ADDRESS_SELECTOR = ".cassetteitem_detail-col1"
 STATION_TEXT_SELECTOR = ".cassetteitem_detail-col2 li, .cassetteitem_detail-col2 .cassetteitem_detail-text"
 BUILDING_INFO_SELECTOR = ".cassetteitem_detail-col3 span, .cassetteitem_detail-col3 div, .cassetteitem_detail-col3"
 RENT_SELECTOR = ".cassetteitem_price--rent"
 MANAGEMENT_SELECTOR = ".cassetteitem_price--administration"
-AREA_SELECTOR = ".cassetteitem_other-area"
-FLOOR_SELECTOR = ".cassetteitem_other-floor"
-ROOM_LINK_SELECTOR = ".cassetteitem_other-linktext a, .cassetteitem_other-link a"
+AREA_SELECTOR = ".cassetteitem_other-area, .cassetteitem_menseki"
+FLOOR_SELECTOR = ".cassetteitem_other-floor, .cassetteitem_other-emphasis"
+ROOM_LINK_SELECTOR = ".cassetteitem_other-linktext a, .cassetteitem_other-link a, .js-cassetLinkHref"
 
 
 def parse_list_page(html_soup: BeautifulSoup) -> List[Property]:
@@ -44,7 +44,8 @@ def parse_list_page(html_soup: BeautifulSoup) -> List[Property]:
                 rent_yen = parse_yen(_text(row.select_one(RENT_SELECTOR)))
                 management_fee_yen = parse_yen(_text(row.select_one(MANAGEMENT_SELECTOR)))
                 area_m2 = parse_float(_text(row.select_one(AREA_SELECTOR)))
-                floor = parse_int(_text(row.select_one(FLOOR_SELECTOR)))
+                floor_text = _text(row.select_one(FLOOR_SELECTOR))
+                floor = parse_int(floor_text)
                 room_age_text = _text(row.select_one(".cassetteitem_other-age"))
                 room_age_year = parse_int(room_age_text) if room_age_text else age_year
                 room_structure = _text(row.select_one(".cassetteitem_other-structure")) or structure
@@ -90,6 +91,11 @@ def _derive_id(listing, row_index: int, url: str, title: str, listing_index: int
 def _title_and_url(anchor) -> tuple[str, str]:
     if anchor is None:
         return "", ""
+    if getattr(anchor, "name", "") != "a":
+        inner_anchor = anchor.find("a")
+        if inner_anchor:
+            return inner_anchor.get_text(strip=True), inner_anchor.get("href", "")
+        return anchor.get_text(strip=True), ""
     return anchor.get_text(strip=True), anchor.get("href", "")
 
 

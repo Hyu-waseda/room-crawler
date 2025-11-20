@@ -20,17 +20,21 @@ def fetch_html(url: str, timeout: int = 10) -> BeautifulSoup:
 
 
 def parse_yen(text: str) -> int:
-    """Parse yen amount like '12.3万円' or '80,000円' to integer yen."""
+    """Parse yen amount like '12.3万円', '12.3万', or '80,000円' to integer yen."""
     if text is None:
         return 0
+
     normalized = text.replace(",", "").replace("円", "").strip()
-    man_match = re.match(r"([0-9]+(?:\.[0-9]+)?)\s*万円", normalized)
+
+    man_match = re.match(r"([0-9]+(?:\.[0-9]+)?)\s*万(?:円)?", normalized)
     if man_match:
         value = float(man_match.group(1)) * 10000
         return int(value)
+
     digits = re.findall(r"\d+", normalized)
     if digits:
         return int("".join(digits))
+
     return 0
 
 
